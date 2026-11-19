@@ -1,0 +1,39 @@
+name: Build APK
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Unpack project.zip
+        run: |
+          set -e
+          [ -f project.zip ] || { echo "::error::project.zip is not in the repository"; exit 1; }
+          unzip -q -o project.zip -d src
+          ls src
+
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v5
+
+      - name: Build the debug APK
+        working-directory: src/gta-subs
+        run: |
+          chmod +x gradlew
+          ./gradlew --no-daemon assembleDebug
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: gta-subs-apk
+          path: src/gta-subs/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
